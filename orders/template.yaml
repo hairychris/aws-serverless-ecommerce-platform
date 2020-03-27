@@ -272,6 +272,8 @@ Resources:
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: ../../shared/templates/dlq.yaml
+      Parameters:
+        AlarmAction: !Ref AlarmTopic
 
   ############
   # LISTENER #
@@ -652,3 +654,236 @@ Resources:
             }
           ]
         }
+
+  ##########
+  # ALARMS #
+  ##########
+
+  AlarmTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: Orders Alarm
+
+  ApiGateway5XXErrorsAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmActions:
+        - !Ref AlarmTopic
+      AlarmDescription: | 
+        API Gateway 5XX Errors > 0
+      ComparisonOperator: GreaterThanThreshold
+      DatapointsToAlarm: 1
+      Dimensions:
+        - Name: ApiName
+          Value: !Ref Api
+      EvaluateLowSampleCountPercentile: ignore
+      EvaluationPeriods: 1
+      ExtendedStatistic: p99
+      MetricName: 5XXError
+      Namespace: AWS/ApiGateway
+      Period: 3600
+      Threshold: 0
+      TreatMissingData: notBreaching
+
+  DynamoDBErrorsAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmActions:
+        - !Ref AlarmTopic
+      AlarmDescription: |
+        DynamoDB Errors > 0
+      ComparisonOperator: GreaterThanThreshold
+      DatapointsToAlarm: 1
+      EvaluationPeriods: 1
+      Metrics:
+        - Id: s1
+          Expression: m1+m2
+        - Id: m1
+          MetricStat:
+            Metric:
+              Dimensions:
+                - Name: TableName
+                  Value: !Ref Table
+              MetricName: UserErrors
+              Namespace: AWS/DynamoDB
+            Period: 3600
+            Stat: Sum
+          ReturnData: false
+        - Id: m2
+          MetricStat:
+            Metric:
+              Dimensions:
+                - Name: TableName
+                  Value: !Ref Table
+              MetricName: SystemErrors
+              Namespace: AWS/DynamoDB
+            Period: 3600
+            Stat: Sum
+          ReturnData: false
+      Threshold: 0
+      TreatMissingData: notBreaching
+
+  LambdaErrorsAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmActions:
+        - !Ref AlarmTopic
+      AlarmDescription: |
+        Lambda Errors > 0
+      ComparisonOperator: GreaterThanThreshold
+      DatapointsToAlarm: 1
+      EvaluationPeriods: 1
+      Metrics:
+        - Id: s1
+          Expression: m1+m2+m3+m4
+        - Id: m1
+          MetricStat:
+            Metric:
+              Dimensions:
+                - Name: FunctionName
+                  Value: !Ref CreateOrderFunction
+              MetricName: Errors
+              Namespace: AWS/Lambda
+            Period: 3600
+            Stat: Sum
+          ReturnData: false
+        - Id: m2
+          MetricStat:
+            Metric:
+              Dimensions:
+                - Name: FunctionName
+                  Value: !Ref GetOrderFunction
+              MetricName: Errors
+              Namespace: AWS/Lambda
+            Period: 3600
+            Stat: Sum
+          ReturnData: false
+        - Id: m3
+          MetricStat:
+            Metric:
+              Dimensions:
+                - Name: FunctionName
+                  Value: !Ref OnEventsFunction
+              MetricName: Errors
+              Namespace: AWS/Lambda
+            Period: 3600
+            Stat: Sum
+          ReturnData: false
+        - Id: m4
+          MetricStat:
+            Metric:
+              Dimensions:
+                - Name: FunctionName
+                  Value: !Ref TableUpdateFunction
+              MetricName: Errors
+              Namespace: AWS/Lambda
+            Period: 3600
+            Stat: Sum
+          ReturnData: false
+      Threshold: 0
+      TreatMissingData: notBreaching
+
+  LambdaThrottlesAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmActions:
+        - !Ref AlarmTopic
+      AlarmDescription: |
+        Lambda Throttles > 0
+      ComparisonOperator: GreaterThanThreshold
+      DatapointsToAlarm: 1
+      EvaluationPeriods: 1
+      Metrics:
+        - Id: s1
+          Expression: m1+m2+m3+m4
+        - Id: m1
+          MetricStat:
+            Metric:
+              Dimensions:
+                - Name: FunctionName
+                  Value: !Ref CreateOrderFunction
+              MetricName: Throttles
+              Namespace: AWS/Lambda
+            Period: 3600
+            Stat: Sum
+          ReturnData: false
+        - Id: m2
+          MetricStat:
+            Metric:
+              Dimensions:
+                - Name: FunctionName
+                  Value: !Ref GetOrderFunction
+              MetricName: Throttles
+              Namespace: AWS/Lambda
+            Period: 3600
+            Stat: Sum
+          ReturnData: false
+        - Id: m3
+          MetricStat:
+            Metric:
+              Dimensions:
+                - Name: FunctionName
+                  Value: !Ref OnEventsFunction
+              MetricName: Throttles
+              Namespace: AWS/Lambda
+            Period: 3600
+            Stat: Sum
+          ReturnData: false
+        - Id: m4
+          MetricStat:
+            Metric:
+              Dimensions:
+                - Name: FunctionName
+                  Value: !Ref TableUpdateFunction
+              MetricName: Throttles
+              Namespace: AWS/Lambda
+            Period: 3600
+            Stat: Sum
+          ReturnData: false
+      Threshold: 0
+      TreatMissingData: notBreaching
+
+  CreateOrderP99LatencyAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmActions:
+        - !Ref AlarmTopic
+      AlarmDescription: | 
+        CreateOrder p99 latency alarm >= 5s
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      DatapointsToAlarm: 1
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref CreateOrderFunction
+      EvaluateLowSampleCountPercentile: ignore
+      EvaluationPeriods: 1
+      ExtendedStatistic: p99
+      MetricName: Duration
+      Namespace: AWS/Lambda
+      Period: 3600
+      Threshold: 5
+      TreatMissingData: notBreaching
+      Unit: Seconds
+
+
+  GetOrderP99LatencyAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmActions:
+        - !Ref AlarmTopic
+      AlarmDescription: | 
+        GetOrder p99 latency alarm >= 1s
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      DatapointsToAlarm: 1
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref GetOrderFunction
+      EvaluateLowSampleCountPercentile: ignore
+      EvaluationPeriods: 1
+      ExtendedStatistic: p99
+      MetricName: Duration
+      Namespace: AWS/Lambda
+      Period: 3600
+      Threshold: 1
+      TreatMissingData: notBreaching
+      Unit: Seconds
