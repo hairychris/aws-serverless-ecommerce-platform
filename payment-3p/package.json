@@ -37,6 +37,6 @@
     "@aws-cdk/core": "1.27.0",
     "source-map-support": "^0.5.16"
   },
-  "repository": "https://github.com/aws-samples/aws-serverless-ecommerce-platform",
+  "repository": "https://github.com/hairychris/aws-serverless-ecommerce-platform",
   "license": "MIT-0"
 }

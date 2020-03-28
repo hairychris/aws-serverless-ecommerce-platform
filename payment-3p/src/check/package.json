@@ -5,7 +5,7 @@
   "main": "index.js",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/aws-samples/aws-serverless-ecommerce-platform.git"
+    "url": "git+https://github.com/hairychris/aws-serverless-ecommerce-platform.git"
   },
   "license": "MIT-0",
   "dependencies": {
